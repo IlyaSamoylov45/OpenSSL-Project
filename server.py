@@ -22,22 +22,31 @@ def main():
     server_sock.bind(('', local_port))
 
     # Listen for incoming connections listen() puts the socket into server mode, accept waits for incoming connections
-    server_sock.listen(5)
+    server_sock.listen(1)
+    print ("{}, waiting for connection from client".format(sys.stderr))
+    connection, client_address = server_sock.accept()
+    print ('{}, client connected: {}'.format(sys.stderr, client_address))
+
+    #get username and password
+    username = connection.recv(MAX_SIZE).decode()
+    password = connection.recv(MAX_SIZE).decode()
+
     # waiting for message
     while True:
-        print ("{}, waiting for connection from client".format(sys.stderr))
-        connection, client_address = server_sock.accept()
-        try:
-            print ('{}, client connected: {}'.format(sys.stderr, client_address))
-            message = connection.recv(MAX_SIZE).decode()
-            print ('{}, recieved {}'.format(sys.stderr, message))
-            if message:
-                print ('{}, sending {}'.format(sys.stderr, message))
-                connection.sendall(message.encode())
-            else:
-                break
-        finally:
-            connection.close()
+        message = connection.recv(MAX_SIZE).decode()
+        print ('{}, recieved {}'.format(sys.stderr, message))
+
+        #temporary until i figure out how to close connection without closing cmd
+        if message == "shutdown":
+            break
+
+        if not message:
+            break
+        else:
+            print ('{}, sending {}'.format(sys.stderr, message))
+            connection.sendall(message.encode())
+
+    connection.close()
 
 # this gives a main function in Python
 if __name__ == "__main__":
