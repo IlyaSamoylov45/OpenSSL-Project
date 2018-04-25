@@ -4,7 +4,7 @@ import argparse
 import socket
 import sys
 
-MAX_SIZE = (1024)
+MAX_SIZE = 1024
 
 def main():
     # parse arguments to the client
@@ -22,20 +22,20 @@ def main():
     server_sock.bind(('', local_port))
 
     # Listen for incoming connections listen() puts the socket into server mode, accept waits for incoming connections
-    server_sock.listen(1)
+    server_sock.listen(5)
     # waiting for message
     while True:
         print ("{}, waiting for connection from client".format(sys.stderr))
         connection, client_address = server_sock.accept()
         try:
             print ('{}, client connected: {}'.format(sys.stderr, client_address))
-            while True:
-                message = connection.recv(MAX_SIZE)
-                print ('{}, recieved {}'.format(sys.stderr, message))
-                if message:
-                    connection.sendall(message)
-                else:
-                    break
+            message = connection.recv(MAX_SIZE).decode()
+            print ('{}, recieved {}'.format(sys.stderr, message))
+            if message:
+                print ('{}, sending {}'.format(sys.stderr, message))
+                connection.sendall(message.encode())
+            else:
+                break
         finally:
             connection.close()
 
