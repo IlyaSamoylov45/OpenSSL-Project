@@ -1,7 +1,7 @@
 import hashlib, uuid
 
 def findUser(name):
-	with open("users.txt", "w+") as usrFile:
+	with open("users.txt", "r") as usrFile:
 		for line in usrFile:
 			line = line.split(" : ")
 			if line[0].lower == name:
@@ -11,7 +11,7 @@ def findUser(name):
 		return False; 
 
 def checkPassword(name, pw):
-	with open("users.txt", "w+") as usrFile:
+	with open("users.txt", "r") as usrFile:
 		for line in usrFile:
 			line = line.split(" : ")
 			if line[0].lower == name:
