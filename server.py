@@ -9,6 +9,7 @@ import uuid
 import os
 import datetime
 import time
+from threading import Thread
 
 MAX_SIZE = 1024
 
@@ -19,7 +20,18 @@ MAX_SIZE = 1024
 ## files doesn't exist or they are empty
 ##########
 
+class ClientThread(Thread):
+    def __init__(self,connection_stream):
+        Thread.__init__(self)
+        self.connection_stream = connection_stream
+    def run(self):
+        #try:
+        authenticate(self.connection_stream)
+        deal_with_msg(self.connection_stream)
 
+        #finally (I'm not sure what to do with this yet)
+            #self.connection_stream.shutdown(socket.SHUT_RDWR)
+            #self.connection_stream.close()
 
 ## This might be combined with findGroup at some point
 ## returns true is a given user name is in users.txt and false
@@ -223,20 +235,22 @@ def main():
 
     # Bind the socket to the port, '' can be address later for now it is local host
     server_sock.bind(('', local_port))
+    threads = []
 
     # Listen for incoming connections listen() puts the socket into server mode, accept waits for incoming connections
-    server_sock.listen(1)
-    print ("Waiting for connection from client")
-    connection, client_address = server_sock.accept()
-    print ('Client connected: (IP : Port) {}'.format(client_address))
-    connection_stream = ssl.wrap_socket(connection, server_side = True, certfile = "domain.crt", keyfile = "domain.key")
 
-    try:
-        authenticate(connection_stream)
-        deal_with_msg(connection_stream)
-    finally:
-        connection_stream.shutdown(socket.SHUT_RDWR)
-        connection_stream.close()
+    while True:
+        server_sock.listen(10)
+        print ("Waiting for connection from client")
+        connection, client_address = server_sock.accept()
+        print ('Client connected: (IP : Port) {}'.format(client_address))
+        connection_stream = ssl.wrap_socket(connection, server_side = True, certfile = "domain.crt", keyfile = "domain.key")
+        new_thread = ClientThread(connection_stream)
+        new_thread.start()
+        threads.append(new_thread)
+
+    for t in threads:
+        t.join()
 
 # this gives a main function in Python
 if __name__ == "__main__":
