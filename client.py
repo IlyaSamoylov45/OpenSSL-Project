@@ -4,12 +4,13 @@ import argparse
 import sys
 import socket
 import ssl
+import pprint
 
 MAX_SIZE = 1024
 
 def auth(sslSock):
     data = sslSock.read(MAX_SIZE).decode()
-    
+
     print ("{}, recieved message {}".format(sys.stderr, data))
 
     message = input("Reply: ")
@@ -18,7 +19,7 @@ def auth(sslSock):
 
     while message != "end" :
         data = sslSock.read(MAX_SIZE).decode()
-        print ("{}, recieved message {}".format(sys.stderr, data)) 
+        print ("{}, recieved message {}".format(sys.stderr, data))
         if data == "Success! You were added as a new User." or data == "Success!":
             break
         message = input("Reply: ")
@@ -33,7 +34,7 @@ def msgBoard(sslSock):
     sslSock.write(("listB").encode('utf-8'))
     data = sslSock.read(MAX_SIZE).decode()
     print ("{}, recieved message {}".format(sys.stderr, data))
-    
+
     message = input("Reply: ")
 
     sslSock.write(message.encode('utf-8'))
@@ -68,32 +69,12 @@ def main():
     ssl_client_sock = ssl.wrap_socket(client_socket, ca_certs = "domain.crt", cert_reqs = ssl.CERT_REQUIRED)
     ssl_client_sock.connect(server_addr)
 
-<<<<<<< HEAD
-    #authenticate user
-    username = input("Username: ")
-    password = input("Password: ")
-    print ("{}, sending username: {}, password: {}".format(sys.stderr, username, password))
-
-    ssl_client_sock.write(username.encode('utf-8'))
-    ssl_client_sock.write(password.encode('utf-8'))
-
-
-    message = input("Post: ")
-    while message != "logout":
-        print ("{}, sending message: {}".format(sys.stderr, message))
-        ssl_client_sock.write(message.encode('utf-8'))
-        data = ssl_client_sock.read(MAX_SIZE).decode()
-        print ("{}, recieved message {}".format(sys.stderr, message))
-
-        message = input("Post: ")
-=======
     #information
     print(repr(ssl_client_sock.getpeername()))
     pprint.pprint(ssl_client_sock.getpeercert())
     print(pprint.pformat(ssl_client_sock.getpeercert()))
 
     auth(ssl_client_sock)
->>>>>>> 04a47d209a4811377ba668a44632fca6435dd4bd
 
     ssl_client_sock.close()
 
