@@ -7,6 +7,44 @@ import ssl
 
 MAX_SIZE = 1024
 
+def auth(sslSock):
+    data = sslSock.read(MAX_SIZE).decode()
+    
+    print ("{}, recieved message {}".format(sys.stderr, data))
+
+    message = input("Reply: ")
+
+    sslSock.write(message.encode('utf-8'))
+
+    while message != "end" :
+        data = sslSock.read(MAX_SIZE).decode()
+        print ("{}, recieved message {}".format(sys.stderr, data)) 
+        if data == "Success! You were added as a new User." or data == "Success!":
+            break
+        message = input("Reply: ")
+        print ("{}, sending message: {}".format(sys.stderr, message))
+        sslSock.write(message.encode('utf-8'))
+
+    msgBoard(sslSock)
+
+
+def msgBoard(sslSock):
+    print ("List of boards:")
+    sslSock.write(("listB").encode('utf-8'))
+    data = sslSock.read(MAX_SIZE).decode()
+    print ("{}, recieved message {}".format(sys.stderr, data))
+    
+    message = input("Reply: ")
+
+    sslSock.write(message.encode('utf-8'))
+
+    while message != "end" :
+        data = sslSock.read(MAX_SIZE).decode()
+        print ("{}, recieved message {}".format(sys.stderr, data))
+        message = input("Reply: ")
+        print ("{}, sending message: {}".format(sys.stderr, message))
+        sslSock.write(message.encode('utf-8'))
+
 def main():
     # parse all the arguments to the client and get the arguments into local variables
     parser = argparse.ArgumentParser(description='Computer Security Client')
@@ -30,6 +68,7 @@ def main():
     ssl_client_sock = ssl.wrap_socket(client_socket, ca_certs = "domain.crt", cert_reqs = ssl.CERT_REQUIRED)
     ssl_client_sock.connect(server_addr)
 
+<<<<<<< HEAD
     #authenticate user
     username = input("Username: ")
     password = input("Password: ")
@@ -47,9 +86,16 @@ def main():
         print ("{}, recieved message {}".format(sys.stderr, message))
 
         message = input("Post: ")
+=======
+    #information
+    print(repr(ssl_client_sock.getpeername()))
+    pprint.pprint(ssl_client_sock.getpeercert())
+    print(pprint.pformat(ssl_client_sock.getpeercert()))
+
+    auth(ssl_client_sock)
+>>>>>>> 04a47d209a4811377ba668a44632fca6435dd4bd
 
     ssl_client_sock.close()
 
-# this gives a main function in Python
 if __name__ == "__main__":
     main()

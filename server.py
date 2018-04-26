@@ -4,30 +4,144 @@ import argparse
 import socket
 import sys
 import ssl
+import hashlib
+import uuid
+import os
+import datetime
+import time
 
 MAX_SIZE = 1024
 
+def findUser(name):
+    with open("users.txt", "r") as usrFile:
+        for line in usrFile:
+            line = line.split(" : ")
+            if line[0].lower() == name.lower():
+                return True
+            else:
+                continue
+        return False; 
+
+def findGroup(name):
+    with open("boards.txt", "r") as bFile:
+        for line in bFile:
+            if line.lower().strip() == name.lower().strip():
+                return True
+            else:
+                continue
+        return False;     
+
+def checkPassword(name, pw):
+    with open("users.txt", "r") as usrFile:
+        for line in usrFile:
+            line = line.split(" : ")
+            if line[0].lower() == name.lower():
+                if line[1] == hashPW(pw, line[2]):
+                    return True
+                else:
+                    return False
+            else:
+                continue
+        return False; 
+
+def addUser(name, hash, salt):
+    with open("users.txt", "a") as usrFile:
+        name = name.lower().strip()
+        usrFile.write("\n" + name + " : " + hash + " : " + salt)
+
+
+def hashPW(pw, salt):
+    return hashlib.sha512((pw.strip() + salt).encode('utf-8')).hexdigest()
+
+def displayBoards():
+    with open("boards.txt", "r+") as boardFile:
+        toReturn = ""
+        for line in boardFile:
+            toReturn += line
+        return toReturn
+
+def getPosts(message):
+    message = message.split(" ")
+    if len(message) == 1:
+        #they didn't put in a group or they formatted their input poorly
+        return "Sorry, I don't understand that input"
+    else:
+        if findGroup(message[1]):
+            toReturn = ""
+            group = message[1].lower().strip() + ".txt"
+            with open(group, "r") as posts:
+                for line in posts:
+                    toReturn += line
+
+            if len(toReturn) == 0:
+                return "Empty"
+            else:    
+                return toReturn
+        else:
+            return "Sorry, that group doesn't seem to exist"
+
+def postComment(message):
+    message = message.split(" ")
+    if len(message) < 2:
+        #they didn't put in a group or they formatted their input poorly
+        return "Sorry, I don't understand that input"
+    else:
+        if findGroup(message[1]):
+            toPost = " ".join(message[2:])
+            group = message[1].lower().strip() + ".txt"
+            with open(group, "a") as posts:
+                timeStamp = time.time()
+                timeStamp = datetime.datetime.fromtimestamp(timeStamp).strftime('%Y-%m-%d %H:%M:%S')
+                posts.write(timeStamp + " : " +  toPost + "\n")
+
+            return "Posted!"
+        else:
+            return "Sorry, that group doesn't seem to exist"
+
+
 def authenticate(connection_stream):
     #get username and password this is where we will deal with username an password
-    username = connection_stream.read(MAX_SIZE).decode()
-    password = connection_stream.read(MAX_SIZE).decode()
-    return
+    retry = False
+    while True:
+        if not retry:
+            connection_stream.send(("Please enter your username: ").encode('utf-8'))
+        else:
+            connection_stream.send(("Sorry, wrong password. Try Again.\nPlease enter your username: ").encode('utf-8'))
+        username = connection_stream.read(MAX_SIZE).decode()
+        if findUser(username):
+            connection_stream.send(("Please enter your password: ").encode('utf-8'))
+            password = connection_stream.read(MAX_SIZE).decode()
+            print(password)
+            if checkPassword(username, password):
+                connection_stream.send(("Success!").encode('utf-8'))
+                return username
+            else:
+                retry = True
+                continue
+        else:
+            connection_stream.send(("Please enter your password: ").encode('utf-8'))
+            password = connection_stream.read(MAX_SIZE).decode()
+            print(password)
+            salt = uuid.uuid4().hex
+            password = hashPW(password, salt)
+            addUser(username, password, salt)
+            connection_stream.send(("Success! You were added as a new User.").encode('utf-8'))
+            return username
 
 def deal_with_msg(connection_stream):
-        # waiting for message
-        while True:
-            message = connection_stream.read(MAX_SIZE).decode()
-            print ('{}, recieved {}'.format(sys.stderr, message))
+    # waiting for message
+    while True:
+        message = connection_stream.read(MAX_SIZE).decode()
+        print ('{}, recieved {}'.format(sys.stderr, message))
+        if(message == "listB"):
+            connection_stream.send((displayBoards()).encode('utf-8'))
+        elif(message.startswith("get".lower().strip())):
+            connection_stream.send(getPosts(message).encode('utf-8'))
+        elif(message.startswith("post".lower().strip())):
+            connection_stream.send(postComment(message).encode('utf-8'))
+        elif(message.startswith("end".lower().strip())):
+            break
 
-            #temporary until i figure out how to close connection without closing cmd
-            if message == "shutdown":
-                break
-
-            if not message:
-                break
-            else:
-                print ('{}, sending {}'.format(sys.stderr, message))
-                connection_stream.sendall(message.encode())
 def main():
     # parse arguments to the client
     parser = argparse.ArgumentParser(description='Computer Security Server')
@@ -56,6 +170,7 @@ def main():
     finally:
         connection_stream.shutdown(socket.SHUT_RDWR)
         connection_stream.close()
+
 # this gives a main function in Python
 if __name__ == "__main__":
     main()
