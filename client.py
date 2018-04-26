@@ -4,7 +4,6 @@ import argparse
 import sys
 import socket
 import ssl
-import pprint
 
 MAX_SIZE = 1024
 
@@ -30,11 +29,6 @@ def main():
     print ("{}, connecting to server {} port {}".format(sys.stderr ,destinationIP, des_port))
     ssl_client_sock = ssl.wrap_socket(client_socket, ca_certs = "domain.crt", cert_reqs = ssl.CERT_REQUIRED)
     ssl_client_sock.connect(server_addr)
-
-    #information
-    print(repr(ssl_client_sock.getpeername()))
-    pprint.pprint(ssl_client_sock.getpeercert())
-    print(pprint.pformat(ssl_client_sock.getpeercert()))
 
     #authenticate user
     username = input("Username: ")
