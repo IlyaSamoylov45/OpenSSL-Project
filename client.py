@@ -53,7 +53,7 @@ def auth(sslSock):
 ##########
 def msgBoard(sslSock):
     print ("List of boards:")
-    sslSock.write(("listB").encode('utf-8'))
+    sslSock.write(("list").encode('utf-8'))
     data = sslSock.read(MAX_SIZE).decode()
     print ("Client: received message {}".format(data))
 

@@ -83,7 +83,7 @@ def hashPW(pw, salt):
 ##########
 def displayBoards():
     with open("boards.txt", "r+") as boardFile:
-        toReturn = ""
+        toReturn = "\n"
         for line in boardFile:
             toReturn += line
         return toReturn
@@ -101,7 +101,7 @@ def getPosts(message):
         return "Sorry, I don't understand that input"
     else:
         if findGroup(message[1]):
-            toReturn = ""
+            toReturn = "\n"
             group = message[1].lower().strip() + ".txt"
             with open(group, "r") as posts:
                 for line in posts:
