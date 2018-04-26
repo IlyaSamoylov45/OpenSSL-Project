@@ -9,7 +9,7 @@ import uuid
 import os
 import datetime
 import time
-from threading import Thread
+import threading
 
 MAX_SIZE = 1024
 
@@ -20,18 +20,27 @@ MAX_SIZE = 1024
 ## files doesn't exist or they are empty
 ##########
 
-class ClientThread(Thread):
+
+
+## Makes the connection a thread so that
+## multiple users are able to connect at
+## one time.
+##########
+class ClientThread(threading.Thread):
     def __init__(self,connection_stream):
-        Thread.__init__(self)
+        threading.Thread.__init__(self)
         self.connection_stream = connection_stream
     def run(self):
-        #try:
-        authenticate(self.connection_stream)
-        deal_with_msg(self.connection_stream)
+        try:
+            authenticate(self.connection_stream)
+            deal_with_msg(self.connection_stream)
 
-        #finally (I'm not sure what to do with this yet)
-            #self.connection_stream.shutdown(socket.SHUT_RDWR)
-            #self.connection_stream.close()
+        finally:
+            self.connection_stream.shutdown(socket.SHUT_RDWR)
+            self.connection_stream.close()
+
+#lock
+lock = threading.Lock()
 
 ## This might be combined with findGroup at some point
 ## returns true is a given user name is in users.txt and false
@@ -80,11 +89,11 @@ def checkPassword(name, pw):
 ## users.txt file.
 ##########
 def addUser(name, hash, salt):
-    #file lock
+    lock.acquire()
     with open("users.txt", "a") as usrFile:
         name = name.lower().strip()
         usrFile.write("\n" + name + " : " + hash + " : " + salt)
-
+    lock.release()
 ## Takes a password and salt combines them and
 ## does a sha 512 hash on them. Returns said hash.
 ##########
@@ -143,12 +152,12 @@ def postComment(message):
         if findGroup(message[1]):
             toPost = " ".join(message[2:])
             group = message[1].lower().strip() + ".txt"
-            #file lock
+            lock.acquire()
             with open(group, "a") as posts:
                 timeStamp = time.time()
                 timeStamp = datetime.datetime.fromtimestamp(timeStamp).strftime('%Y-%m-%d %H:%M:%S')
                 posts.write(timeStamp + " : " +  toPost + "\n")
-
+            lock.release()
             return "Posted!"
         else:
             return "Sorry, that group doesn't seem to exist"
