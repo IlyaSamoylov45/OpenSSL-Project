@@ -7,6 +7,44 @@ import ssl
 
 MAX_SIZE = 1024
 
+def auth(sslSock):
+    data = sslSock.read(MAX_SIZE).decode()
+    
+    print ("{}, recieved message {}".format(sys.stderr, data))
+
+    message = input("Reply: ")
+
+    sslSock.write(message.encode('utf-8'))
+
+    while message != "end" :
+        data = sslSock.read(MAX_SIZE).decode()
+        print ("{}, recieved message {}".format(sys.stderr, data)) 
+        if data == "Success! You were added as a new User." or data == "Success!":
+            break
+        message = input("Reply: ")
+        print ("{}, sending message: {}".format(sys.stderr, message))
+        sslSock.write(message.encode('utf-8'))
+
+    msgBoard(sslSock)
+
+
+def msgBoard(sslSock):
+    print ("List of boards:")
+    sslSock.write(("listB").encode('utf-8'))
+    data = sslSock.read(MAX_SIZE).decode()
+    print ("{}, recieved message {}".format(sys.stderr, data))
+    
+    message = input("Reply: ")
+
+    sslSock.write(message.encode('utf-8'))
+
+    while message != "end" :
+        data = sslSock.read(MAX_SIZE).decode()
+        print ("{}, recieved message {}".format(sys.stderr, data))
+        message = input("Reply: ")
+        print ("{}, sending message: {}".format(sys.stderr, message))
+        sslSock.write(message.encode('utf-8'))
+
 def main():
     # parse all the arguments to the client and get the arguments into local variables
     parser = argparse.ArgumentParser(description='Computer Security Client')
@@ -30,26 +68,10 @@ def main():
     ssl_client_sock = ssl.wrap_socket(client_socket, ca_certs = "domain.crt", cert_reqs = ssl.CERT_REQUIRED)
     ssl_client_sock.connect(server_addr)
 
-    #authenticate user
-    username = input("Username: ")
-    password = input("Password: ")
-    print ("{}, sending username: {}, password: {}".format(sys.stderr, username, password))
-
-    ssl_client_sock.write(username.encode('utf-8'))
-    ssl_client_sock.write(password.encode('utf-8'))
-
-
-    message = input("Post: ")
-    while message != "logout":
-        print ("{}, sending message: {}".format(sys.stderr, message))
-        ssl_client_sock.write(message.encode('utf-8'))
-        data = ssl_client_sock.read(MAX_SIZE).decode()
-        print ("{}, recieved message {}".format(sys.stderr, message))
-
-        message = input("Post: ")
+    auth(ssl_client_sock)
+    
 
     ssl_client_sock.close()
 
-# this gives a main function in Python
 if __name__ == "__main__":
     main()

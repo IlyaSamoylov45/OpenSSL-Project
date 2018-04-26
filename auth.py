@@ -28,7 +28,7 @@ def checkPassword(name, pw):
 def addUser(name, hash, salt):
 	with open("users.txt", "a") as usrFile:
 		name = name.lower().strip()
-		usrFile.write(name + " : " + hash + " : " + salt)
+		usrFile.write("\n" + name + " : " + hash + " : " + salt)
 
 
 def hashPW(pw, salt):
