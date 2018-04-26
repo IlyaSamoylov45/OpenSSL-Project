@@ -11,7 +11,7 @@ MAX_SIZE = 1024
 def auth(sslSock):
     data = sslSock.read(MAX_SIZE).decode()
 
-    print ("{}, recieved message {}".format(sys.stderr, data))
+    print ("Client: recieved message {}".format(data))
 
     message = input("Reply: ")
 
@@ -19,11 +19,11 @@ def auth(sslSock):
 
     while message != "end" :
         data = sslSock.read(MAX_SIZE).decode()
-        print ("{}, recieved message {}".format(sys.stderr, data))
+        print ("Client: recieved message {}".format(data))
         if data == "Success! You were added as a new User." or data == "Success!":
             break
         message = input("Reply: ")
-        print ("{}, sending message: {}".format(sys.stderr, message))
+        print ("Client: sending message: {}".format(message))
         sslSock.write(message.encode('utf-8'))
 
     msgBoard(sslSock)
@@ -33,7 +33,7 @@ def msgBoard(sslSock):
     print ("List of boards:")
     sslSock.write(("listB").encode('utf-8'))
     data = sslSock.read(MAX_SIZE).decode()
-    print ("{}, recieved message {}".format(sys.stderr, data))
+    print ("Client: recieved message {}".format(data))
 
     message = input("Reply: ")
 
@@ -41,9 +41,9 @@ def msgBoard(sslSock):
 
     while message != "end" :
         data = sslSock.read(MAX_SIZE).decode()
-        print ("{}, recieved message {}".format(sys.stderr, data))
+        print ("Client: recieved message {}".format(data))
         message = input("Reply: ")
-        print ("{}, sending message: {}".format(sys.stderr, message))
+        print ("Client: sending message: {}".format(message))
         sslSock.write(message.encode('utf-8'))
 
 def main():
@@ -61,11 +61,13 @@ def main():
     local_port =  args['local_port']
 
 
-    # create a socket and connect to the server
+    # create a socket, bind to local specified port, get serverdestination then connect to the server
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    client_socket.bind(('', int(local_port)))
+
     server_addr = (destinationIP, int(des_port))
 
-    print ("{}, connecting to server {} port {}".format(sys.stderr ,destinationIP, des_port))
+    print ("Client connecting to (Server IP , Port Number")
     ssl_client_sock = ssl.wrap_socket(client_socket, ca_certs = "domain.crt", cert_reqs = ssl.CERT_REQUIRED)
     ssl_client_sock.connect(server_addr)
 

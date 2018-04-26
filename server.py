@@ -20,7 +20,7 @@ def findUser(name):
                 return True
             else:
                 continue
-        return False; 
+        return False;
 
 def findGroup(name):
     with open("boards.txt", "r") as bFile:
@@ -29,7 +29,7 @@ def findGroup(name):
                 return True
             else:
                 continue
-        return False;     
+        return False;
 
 def checkPassword(name, pw):
     with open("users.txt", "r") as usrFile:
@@ -42,7 +42,7 @@ def checkPassword(name, pw):
                     return False
             else:
                 continue
-        return False; 
+        return False;
 
 def addUser(name, hash, salt):
     with open("users.txt", "a") as usrFile:
@@ -75,7 +75,7 @@ def getPosts(message):
 
             if len(toReturn) == 0:
                 return "Empty"
-            else:    
+            else:
                 return toReturn
         else:
             return "Sorry, that group doesn't seem to exist"
@@ -132,7 +132,7 @@ def deal_with_msg(connection_stream):
     # waiting for message
     while True:
         message = connection_stream.read(MAX_SIZE).decode()
-        print ('{}, recieved {}'.format(sys.stderr, message))
+        print ('Server: recieved {}'.format(message))
         if(message == "listB"):
             connection_stream.send((displayBoards()).encode('utf-8'))
         elif(message.startswith("get".lower().strip())):
@@ -141,6 +141,9 @@ def deal_with_msg(connection_stream):
             connection_stream.send(postComment(message).encode('utf-8'))
         elif(message.startswith("end".lower().strip())):
             break
+        #lets error check this later in case no get/post/end
+        else:
+            return
 
 def main():
     # parse arguments to the client
@@ -159,9 +162,9 @@ def main():
 
     # Listen for incoming connections listen() puts the socket into server mode, accept waits for incoming connections
     server_sock.listen(1)
-    print ("{}, waiting for connection from client".format(sys.stderr))
+    print ("Waiting for connection from client")
     connection, client_address = server_sock.accept()
-    print ('{}, client connected: {}'.format(sys.stderr, client_address))
+    print ('Client connected: (IP : Port) {}'.format(client_address))
     connection_stream = ssl.wrap_socket(connection, server_side = True, certfile = "domain.crt", keyfile = "domain.key")
 
     try:
