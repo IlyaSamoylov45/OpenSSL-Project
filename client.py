@@ -97,7 +97,6 @@ def main():
 
     #information
     print(repr(ssl_client_sock.getpeername()))
-    pprint.pprint(ssl_client_sock.getpeercert())
     print(pprint.pformat(ssl_client_sock.getpeercert()))
 
     auth(ssl_client_sock)
