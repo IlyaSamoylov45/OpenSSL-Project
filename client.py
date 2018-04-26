@@ -3,6 +3,7 @@
 import argparse
 import sys
 import socket
+import ssl
 
 MAX_SIZE = 1024
 
@@ -26,27 +27,28 @@ def main():
     server_addr = (destinationIP, int(des_port))
 
     print ("{}, connecting to server {} port {}".format(sys.stderr ,destinationIP, des_port))
-    client_socket.connect(server_addr)
+    ssl_client_sock = ssl.wrap_socket(client_socket, ca_certs = "domain.crt", cert_reqs = ssl.CERT_REQUIRED)
+    ssl_client_sock.connect(server_addr)
 
     #authenticate user
     username = input("Username: ")
     password = input("Password: ")
     print ("{}, sending username: {}, password: {}".format(sys.stderr, username, password))
 
-    client_socket.sendall(username.encode('utf-8'))
-    client_socket.sendall(password.encode('utf-8'))
+    ssl_client_sock.write(username.encode('utf-8'))
+    ssl_client_sock.write(password.encode('utf-8'))
 
 
     message = input("Post: ")
     while message != "logout":
         print ("{}, sending message: {}".format(sys.stderr, message))
-        client_socket.sendall(message.encode('utf-8'))
-        data = client_socket.recv(MAX_SIZE).decode()
+        ssl_client_sock.write(message.encode('utf-8'))
+        data = ssl_client_sock.read(MAX_SIZE).decode()
         print ("{}, recieved message {}".format(sys.stderr, message))
 
         message = input("Post: ")
 
-    client_socket.close()
+    ssl_client_sock.close()
 
 # this gives a main function in Python
 if __name__ == "__main__":
