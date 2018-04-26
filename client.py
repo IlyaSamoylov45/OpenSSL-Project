@@ -4,6 +4,7 @@ import argparse
 import sys
 import socket
 import ssl
+import pprint
 
 MAX_SIZE = 1024
 
@@ -68,8 +69,28 @@ def main():
     ssl_client_sock = ssl.wrap_socket(client_socket, ca_certs = "domain.crt", cert_reqs = ssl.CERT_REQUIRED)
     ssl_client_sock.connect(server_addr)
 
-    auth(ssl_client_sock)
-    
+    #information
+    print(repr(ssl_client_sock.getpeername()))
+    pprint.pprint(ssl_client_sock.getpeercert())
+    print(pprint.pformat(ssl_client_sock.getpeercert()))
+
+    #authenticate user
+    username = input("Username: ")
+    password = input("Password: ")
+    print ("{}, sending username: {}, password: {}".format(sys.stderr, username, password))
+
+    ssl_client_sock.write(username.encode('utf-8'))
+    ssl_client_sock.write(password.encode('utf-8'))
+
+
+    message = input("Post: ")
+    while message != "logout":
+        print ("{}, sending message: {}".format(sys.stderr, message))
+        ssl_client_sock.write(message.encode('utf-8'))
+        data = ssl_client_sock.read(MAX_SIZE).decode()
+        print ("{}, recieved message {}".format(sys.stderr, message))
+
+        message = input("Post: ")
 
     ssl_client_sock.close()
 
