@@ -91,7 +91,7 @@ def main():
 
     server_addr = (destinationIP, int(des_port))
 
-    print ("Client connecting to (Server IP , Port Number"))
+    print ("Client connecting to (Server IP , Port Number)")
     ssl_client_sock = ssl.wrap_socket(client_socket, ca_certs = "domain.crt", cert_reqs = ssl.CERT_REQUIRED)
     ssl_client_sock.connect(server_addr)
 

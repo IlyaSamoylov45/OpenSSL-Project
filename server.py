@@ -14,7 +14,7 @@ MAX_SIZE = 1024
 
 ##########
 ## TODO: Make a lot of my functions more
-## fault tolerant. I currently do no null 
+## fault tolerant. I currently do no null
 ## checks which could be a huge issue is
 ## files doesn't exist or they are empty
 ##########
@@ -68,6 +68,7 @@ def checkPassword(name, pw):
 ## users.txt file.
 ##########
 def addUser(name, hash, salt):
+    #file lock
     with open("users.txt", "a") as usrFile:
         name = name.lower().strip()
         usrFile.write("\n" + name + " : " + hash + " : " + salt)
@@ -90,7 +91,7 @@ def displayBoards():
 
 ## If the user entered "get ...." it splits up
 ## their input and looks a group name that's the same
-## as whatever the user typed after get. 
+## as whatever the user typed after get.
 ## I Think I still have some work to do on this function
 ## and the post function to make the inputs more consistent.
 ##########
@@ -119,7 +120,7 @@ def getPosts(message):
 ## is a group with that name. If yes, it takes the rest
 ## of the user input, timestamps it, and posts it to
 ## that given group. If it doesn't find the group it
-## just apologized and moves on. 
+## just apologized and moves on.
 ##########
 def postComment(message):
     message = message.split(" ")
@@ -130,6 +131,7 @@ def postComment(message):
         if findGroup(message[1]):
             toPost = " ".join(message[2:])
             group = message[1].lower().strip() + ".txt"
+            #file lock
             with open(group, "a") as posts:
                 timeStamp = time.time()
                 timeStamp = datetime.datetime.fromtimestamp(timeStamp).strftime('%Y-%m-%d %H:%M:%S')
@@ -171,7 +173,7 @@ def authenticate(connection_stream):
                 retry = True
                 continue
         else:
-            connection_stream.send(("Please enter your password: ").encode('utf-8'))
+            connection_stream.send(("New User will be created with the name {}, enter your password: ").format(username).encode('utf-8'))
             password = connection_stream.read(MAX_SIZE).decode()
             print(password)
             salt = uuid.uuid4().hex
@@ -179,7 +181,7 @@ def authenticate(connection_stream):
             addUser(username, password, salt)
             connection_stream.send(("Success! You were added as a new User.").encode('utf-8'))
             return username
-## I hate the name of this function. I'm going to change it at 
+## I hate the name of this function. I'm going to change it at
 ## some point. Bascially the main loop of the message board
 ## onces some one is authenticated it allows them to: get
 ## the messages from a given group, post a message to a group,
@@ -203,7 +205,7 @@ def deal_with_msg(connection_stream):
             break
         #lets error check this later in case no get/post/end
         else:
-            return
+            break
 ## TODO: Make this mutli threaded.
 ## Set up of ssl socket and waits for a client connection.
 ##########
