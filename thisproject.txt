@@ -1,0 +1,4 @@
+Group Thisproject created at: 2018-04-26 19:57:40 by joe
+2018-04-26 19:57:40 : joe : 
+2018-04-26 19:59:17 : joe : I think I'm almost done. Now I just have to talk to myself in three different terminals to make up some tests. I'm already out of thing hmm this is weird ... I tried to delete some text and it wouldn't let me. I should ook into that
+2018-04-26 20:00:20 : ilya : I think we're done man, I'm ready to be done

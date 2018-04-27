@@ -32,8 +32,8 @@ class ClientThread(threading.Thread):
         self.connection_stream = connection_stream
     def run(self):
         try:
-            authenticate(self.connection_stream)
-            deal_with_msg(self.connection_stream)
+            un = authenticate(self.connection_stream)
+            deal_with_msg(self.connection_stream, un)
 
         finally:
             self.connection_stream.shutdown(socket.SHUT_RDWR)
@@ -74,9 +74,12 @@ def findGroup(name):
 def checkPassword(name, pw):
     with open("users.txt", "r") as usrFile:
         for line in usrFile:
-            line = line.split(" : ")
+            if len(line) != 0:
+                line = line.split(" : ")
+            else:
+                continue
             if line[0].lower() == name.lower():
-                if line[1] == hashPW(pw, line[2]):
+                if line[1] == hashPW(pw, line[2].strip()):
                     return True
                 else:
                     return False
@@ -92,8 +95,11 @@ def addUser(name, hash, salt):
     lock.acquire()
     with open("users.txt", "a") as usrFile:
         name = name.lower().strip()
-        usrFile.write("\n" + name + " : " + hash + " : " + salt)
+        usrFile.write("\n")
+        usrFile.write(name + " : " + hash + " : " + salt)
+        usrFile.write("\n")
     lock.release()
+
 ## Takes a password and salt combines them and
 ## does a sha 512 hash on them. Returns said hash.
 ##########
@@ -106,6 +112,7 @@ def hashPW(pw, salt):
 def displayBoards():
     with open("boards.txt", "r+") as boardFile:
         toReturn = "\n"
+        toReturn +="\nList of current groups: \n"
         for line in boardFile:
             toReturn += line
         return toReturn
@@ -143,28 +150,57 @@ def getPosts(message):
 ## that given group. If it doesn't find the group it
 ## just apologized and moves on.
 ##########
-def postComment(message):
-    message = message.split(" ")
+def postComment(message, username):
+    new_message = message.split(" ")
     if len(message) < 2:
         #they didn't put in a group or they formatted their input poorly
         return "Sorry, I don't understand that input"
     else:
+        if not findGroup(new_message[1]):
+            addGroup(message, username)
+        toPost = " ".join(new_message[2:])
+        group = new_message[1].lower().strip() + ".txt"
+        lock.acquire()
+        with open(group, "a") as posts:
+            timeStamp = time.time()
+            timeStamp = datetime.datetime.fromtimestamp(timeStamp).strftime('%Y-%m-%d %H:%M:%S')
+            posts.write(timeStamp + " : " + username + " : " + toPost + "\n")
+        lock.release()
+
+        return "Posted!"
+
+# Adds a supplied group the the boards if one by that name doesn't already
+# exist
+##########
+def addGroup(message, username):
+    message = message.split(" ")
+    if len(message) == 1:
+        return "You need to provide a name from the group."
+    else:
         if findGroup(message[1]):
-            toPost = " ".join(message[2:])
-            group = message[1].lower().strip() + ".txt"
-            lock.acquire()
-            with open(group, "a") as posts:
+            return "Sorry, that group already exists."
+        else:
+            groupName = message[1].lower().strip() + ".txt"
+            with open(groupName, "w+") as newGroup:
                 timeStamp = time.time()
                 timeStamp = datetime.datetime.fromtimestamp(timeStamp).strftime('%Y-%m-%d %H:%M:%S')
-                posts.write(timeStamp + " : " +  toPost + "\n")
-            lock.release()
-            return "Posted!"
-        else:
-            return "Sorry, that group doesn't seem to exist"
+                newGroup.write("Group " + message[1].title() + " created at: " + timeStamp + " by " + username + "\n")
 
-## TODO: Make this fucking thing.
-def addGroup(message):
-    pass
+            with open("boards.txt", "a") as boards:
+                boards.write("\n" + message[1].lower().strip())
+            return "Group created!"
+
+# Lists all available commands to the user
+##########
+def help():
+    return """ 
+\nList of commands:\n
+LIST: lists all the existing boards.
+GET <GROUP NAME>: gets all the posts from the board with the given group name.
+POST <GROUP NAME> <CONTENTS>: adds the contents to the end of the board with the supplied group name.
+ADD <GRROUP NAME>: creates a new group with the supplied name if one doesn't already exist with that name.
+    """
+
 
 ## As soon as a connection is made with the client
 ## authenticate() is run which will start by asking for
@@ -183,10 +219,12 @@ def authenticate(connection_stream):
         else:
             connection_stream.send(("Sorry, wrong password. Try Again.\nPlease enter your username: ").encode('utf-8'))
         username = connection_stream.read(MAX_SIZE).decode()
+        while len(username) < 2:
+            connection_stream.send(("Usernames must be two characters or longer. Try again. \nPlease enter your username: ").encode('utf-8'))
+            username = connection_stream.read(MAX_SIZE).decode()
         if findUser(username):
             connection_stream.send(("Please enter your password: ").encode('utf-8'))
             password = connection_stream.read(MAX_SIZE).decode()
-            print(password)
             if checkPassword(username, password):
                 connection_stream.send(("Success!").encode('utf-8'))
                 return username
@@ -196,12 +234,13 @@ def authenticate(connection_stream):
         else:
             connection_stream.send(("New User will be created with the name {}, enter your password: ").format(username).encode('utf-8'))
             password = connection_stream.read(MAX_SIZE).decode()
-            print(password)
             salt = uuid.uuid4().hex
             password = hashPW(password, salt)
-            addUser(username, password, salt)
+            addUser(username.lower().strip(), password.strip(), salt)
             connection_stream.send(("Success! You were added as a new User.").encode('utf-8'))
             return username
+
+
 ## I hate the name of this function. I'm going to change it at
 ## some point. Bascially the main loop of the message board
 ## onces some one is authenticated it allows them to: get
@@ -209,7 +248,7 @@ def authenticate(connection_stream):
 ## list the groups, and *TODO* add a group. The user can
 ## end a session whenever they like with the end command.
 ##########
-def deal_with_msg(connection_stream):
+def deal_with_msg(connection_stream, username):
     # waiting for message
     while True:
         message = connection_stream.read(MAX_SIZE).decode()
@@ -219,14 +258,17 @@ def deal_with_msg(connection_stream):
         elif(message.startswith("get".lower().strip())):
             connection_stream.send(getPosts(message).encode('utf-8'))
         elif(message.startswith("post".lower().strip())):
-            connection_stream.send(postComment(message).encode('utf-8'))
+            connection_stream.send(postComment(message, username).encode('utf-8'))
         elif(message.startswith("add".lower().strip())):
-            pass
+            connection_stream.send(addGroup(message, username).encode('utf-8'))
+        elif(message.startswith("help".lower().strip())):
+            connection_stream.send(help().encode('utf-8'))
         elif(message.startswith("end".lower().strip())):
             break
-        #lets error check this later in case no get/post/end
         else:
-            break
+            connection_stream.send(("Sorry, I didn't understand that input.").encode('utf-8'))
+
+
 ## TODO: Make this mutli threaded.
 ## Set up of ssl socket and waits for a client connection.
 ##########

@@ -5,6 +5,7 @@ import sys
 import socket
 import ssl
 import pprint
+from random import randint
 
 MAX_SIZE = 1024
 
@@ -26,18 +27,25 @@ MAX_SIZE = 1024
 def auth(sslSock):
     data = sslSock.read(MAX_SIZE).decode()
 
-    print ("Client: received message {}".format(data))
+    print ("Server: {}".format(data))
 
-    message = input("Reply: ")
+    message = input("> ")
+    if len(message) == 0:
+        message = " "
+    elif message == "end":
+        return
 
     sslSock.write(message.encode('utf-8'))
+    print ("Client: sending message: {}".format(message))
 
     while message != "end" :
         data = sslSock.read(MAX_SIZE).decode()
-        print ("Client: received message {}".format(data))
+        print ("Server: {}".format(data))
         if data == "Success! You were added as a new User." or data == "Success!":
             break
-        message = input("Reply: ")
+        message = input("> ")
+        if len(message) == 0:
+            message = " "
         print ("Client: sending message: {}".format(message))
         sslSock.write(message.encode('utf-8'))
 
@@ -52,19 +60,26 @@ def auth(sslSock):
 ## for.
 ##########
 def msgBoard(sslSock):
-    print ("List of boards:")
+    print("\n~~~~Welcome to the CS 419 message boards!~~~~")
+    print("~~~~~Type HELP to get a list of commands~~~~~")
+    print("~~Type LIST to get a list of current groups~~\n")
     sslSock.write(("list").encode('utf-8'))
     data = sslSock.read(MAX_SIZE).decode()
-    print ("Client: received message {}".format(data))
+    print ("Server: {}".format(data))
 
-    message = input("Reply: ")
+    message = input("> ")
+    if len(message) == 0:
+        message = " "
 
     sslSock.write(message.encode('utf-8'))
+    print ("Client: sending message: {}".format(message))
 
     while message != "end" :
         data = sslSock.read(MAX_SIZE).decode()
-        print ("Client: received message {}".format(data))
-        message = input("Reply: ")
+        print ("Server: {}".format(data))
+        message = input("> ")
+        if len(message) == 0:
+            message = " "
         print ("Client: sending message: {}".format(message))
         sslSock.write(message.encode('utf-8'))
 
@@ -87,7 +102,12 @@ def main():
 
     # create a socket, bind to local specified port, get server destination then connect to the server
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    client_socket.bind(('', int(local_port)))
+    try:
+        client_socket.bind(('', int(local_port)))
+    except:
+        local_port = int(local_port) + randint(1, 100)
+        client_socket.bind(('', local_port))
+
 
     server_addr = (destinationIP, int(des_port))
 
